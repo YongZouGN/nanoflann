@@ -1292,21 +1292,31 @@ class KDTreeBaseClass
         const auto  dims     = (DIM > 0 ? DIM : obj.dim_);
         const auto  EPS      = static_cast<DistanceType>(0.00001);
         ElementType max_span = bbox[0].high - bbox[0].low;
+        ElementType min_elem = 0, max_elem = 0;
+        cutfeat = 0;
+
         for (Dimension i = 1; i < dims; ++i)
         {
             ElementType span = bbox[i].high - bbox[i].low;
-            if (span > max_span) { max_span = span; }
+            if (span > max_span)
+            {
+                max_span = span;
+                min_elem = bbox[i].low;
+                max_elem = bbox[i].high;
+                cutfeat = i;
+            }
         }
         ElementType max_spread = -1;
-        cutfeat                = 0;
-        ElementType min_elem = 0, max_elem = 0;
+        
         for (Dimension i = 0; i < dims; ++i)
         {
             ElementType span = bbox[i].high - bbox[i].low;
             if (span > (1 - EPS) * max_span)
             {
                 ElementType min_elem_, max_elem_;
-                computeMinMax(obj, ind, count, i, min_elem_, max_elem_);
+                max_elem_ = bbox[i].high;
+                min_elem_ = bbox[i].low;
+
                 ElementType spread = max_elem_ - min_elem_;
                 if (spread > max_spread)
                 {
@@ -1320,6 +1330,9 @@ class KDTreeBaseClass
         // split in the middle
         DistanceType split_val = (bbox[cutfeat].low + bbox[cutfeat].high) / 2;
 
+        if(!bUpdated)
+            computeMinMax(obj, ind, count, cutfeat, min_elem, max_elem);
+        
         if (split_val < min_elem)
             cutval = min_elem;
         else if (split_val > max_elem)
